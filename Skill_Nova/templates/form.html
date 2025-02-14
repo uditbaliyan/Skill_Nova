@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AICTE OIB-SIP Interest Form</title>
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> -->
+<style>
+    body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+}
+
+header {
+    background-color: #6C5CE7;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+form {
+    width: 50%;
+    margin: 20px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #6C5CE7;
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+button:hover {
+    background-color: #4b42d4;
+}
+
+</style>
+</head>
+<body>
+
+    <header>
+        <h1>AICTE OIB-SIP February Cohort</h1>
+        <p>Enroll now for a virtual internship program!</p>
+    </header>
+
+    <form action="/submit" method="POST">
+        <label>Full Name *</label>
+        <input type="text" name="name" required>
+
+        <label>Email *</label>
+        <input type="email" name="email" required>
+
+        <label>Gender *</label>
+        <select name="gender" required>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Others">Others</option>
+        </select>
+
+        <label>Highest Academic Qualification *</label>
+        <input type="text" name="qualification" required>
+
+        <label>Preferred Internship Function *</label>
+        <input type="text" name="internship_function" required>
+
+        <label>Country *</label>
+        <input type="text" name="country" required>
+
+        <label>College *</label>
+        <input type="text" name="college" required>
+
+        <label>Telegram Contact No. *</label>
+        <input type="tel" name="telegram_contact" required>
+
+        <label>WhatsApp Number *</label>
+        <input type="tel" name="whatsapp" required>
+
+        <label>Current Year of Study *</label>
+        <input type="text" name="year" required>
+
+        <label>Mark Your Skill Level (1-10) *</label>
+        <input type="number" name="skills" min="1" max="10" required>
+
+        <label>Joined Telegram & LinkedIn? *</label>
+        <select name="telegram_linkedin" required>
+            <option value="Yes">Yes</option>
+        </select>
+
+        <label>Where did you learn about OIB-SIP? *</label>
+        <select name="source" required>
+            <option value="Social Media">Social Media</option>
+            <option value="Job Portals">Job Portals</option>
+            <option value="Referral">Referral</option>
+            <option value="Campus Placement">Campus Placement</option>
+        </select>
+
+        <label>Acknowledge & Accept Terms *</label>
+        <select name="acknowledge" required>
+            <option value="Yes">Yes</option>
+        </select>
+
+        <label>Any Query? (GitHub, Leetcode, Resume link etc.)</label>
+        <textarea name="query"></textarea>
+
+        <button type="submit">Submit</button>
+    </form>
+
+</body>
+</html>
