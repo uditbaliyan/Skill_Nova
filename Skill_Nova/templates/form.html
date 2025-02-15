@@ -3,137 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AICTE OIB-SIP Interest Form</title>
-    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> -->
-<style>
-    body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f5f5f5;
-}
-
-header {
-    background-color: #6C5CE7;
-    color: white;
-    text-align: center;
-    padding: 20px;
-}
-
-form {
-    width: 50%;
-    margin: 20px auto;
-    padding: 20px;
-    background: white;
-    border-radius: 5px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-}
-
-label {
-    display: block;
-    margin-top: 10px;
-    font-weight: bold;
-}
-
-input, select, textarea {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-button {
-    width: 100%;
-    padding: 10px;
-    background-color: #6C5CE7;
-    color: white;
-    border: none;
-    cursor: pointer;
-    margin-top: 15px;
-}
-
-button:hover {
-    background-color: #4b42d4;
-}
-
-</style>
+    <link rel="icon" href="SkillNova-main/skillnova.png" type="image/png">
+    <title>SkillNova - Registration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="antialiased text-gray-800 min-h-screen flex flex-col bg-gray-100">
 
-    <header>
-        <h1>AICTE OIB-SIP February Cohort</h1>
-        <p>Enroll now for a virtual internship program!</p>
+    <header class="fixed top-0 left-0 w-full bg-white shadow-md z-50">
+        <nav class="container mx-auto flex justify-between items-center py-4 px-6">
+            <a href="{{ url_for('home') }}" class="text-2xl font-bold text-black-600">SkillNova</a>
+        </nav>
     </header>
-    {% with messages = get_flashed_messages(with_categories=True) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-  {% endwith %}
 
-    <form action="/submit" method="POST">
-        <label>Full Name *</label>
-        <input type="text" name="name" required>
+    <div class="container mx-auto mt-24 p-6 max-w-3xl bg-white shadow-lg rounded-lg">
+        <img src="{{url_for('static', filename='image/skillnova.png')}}" alt="SkillNova Logo" class="h-40 mx-auto mb-4">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">SkillNova Internship Registration</h2>
+        <p class="text-center text-gray-600 mb-6">Complete the form to register for your preferred internship domain.</p>
 
-        <label>Email *</label>
-        <input type="email" name="email" required>
+        <form id="internship-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold">Email *</label>
+                    <input type="email" id="email" name="email" class="w-full border p-3 rounded-md" required>
+                </div>
+                <div>
+                    <label class="block font-semibold">Full Name *</label>
+                    <input type="text" id="name" name="name" class="w-full border p-3 rounded-md" required>
+                </div>
+            </div>
 
-        <label>Gender *</label>
-        <select name="gender" required>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Others">Others</option>
-        </select>
+            <div>
+                <label class="block font-semibold">Internship Domain *</label>
+                <select id="domain" name="domain" class="w-full border p-3 rounded-md" required>
+                    <option value="">Select</option>
+                    <option value="Web Development">Web Development</option>
+                    <option value="Android App Development">Android App Development</option>
+                    <option value="Data Science">Data Science</option>
+                    <option value="Java Programming">Java Programming</option>
+                    <option value="Python Programming">Python Programming</option>
+                    <option value="C++ Programming">C++ Programming</option>
+                    <option value="UI/UX Design">UI/UX Design</option>
+                    <option value="Artificial Intelligence">Artificial Intelligence</option>
+                    <option value="Machine Learning">Machine Learning</option>
+                </select>
+            </div>
 
-        <label>Highest Academic Qualification *</label>
-        <input type="text" name="qualification" required>
+            <div>
+                <label class="block font-semibold">Highest Academic Qualification *</label>
+                <input type="text" id="qualification" name="qualification" class="w-full border p-3 rounded-md" required>
+            </div>
 
-        <label>Preferred Internship Function *</label>
-        <input type="text" name="internship_function" required>
+            <div>
+                <label class="block font-semibold">Most Recent or Currently Pursuing Academic Degree *</label>
+                <input type="text" id="degree" name="degree" class="w-full border p-3 rounded-md" required>
+            </div>
 
-        <label>Country *</label>
-        <input type="text" name="country" required>
+            <div>
+                <label class="block font-semibold">Current Year (Education) *</label>
+                <input type="text" id="year" name="year" class="w-full border p-3 rounded-md" required>
+            </div>
 
-        <label>College *</label>
-        <input type="text" name="college" required>
+            <div>
+                <label class="block font-semibold">College *</label>
+                <input type="text" id="college" name="college" class="w-full border p-3 rounded-md" required>
+            </div>
 
-        <label>Telegram Contact No. *</label>
-        <input type="tel" name="telegram_contact" required>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold">Contact No. *</label>
+                    <input type="tel" id="contact" name="contact" class="w-full border p-3 rounded-md" required>
+                </div>
+                <div>
+                    <label class="block font-semibold">WhatsApp Number *</label>
+                    <input type="tel" id="whatsapp" name="whatsapp" class="w-full border p-3 rounded-md" required>
+                </div>
+                <div>
+                    <label class="block font-semibold">Telegram Number *</label>
+                    <input type="tel" id="telegram_contact" name="telegram_contact" class="w-full border p-3 rounded-md" required>
+                </div>
+            </div>
 
-        <label>WhatsApp Number *</label>
-        <input type="tel" name="whatsapp" required>
+            <div>
+                <label class="block font-semibold">Where did you learn about SkillNova? *</label>
+                <select id="source" name="source" class="w-full border p-3 rounded-md" required>
+                    <option value="">Select</option>
+                    <option value="Social Media">Social Media (Instagram, LinkedIn, etc.)</option>
+                    <option value="Referral">Referral (Friends, Colleagues, Relatives, etc.)</option>
+                    <option value="Campus Placement">Campus Placement Cell/Coordinators</option>
+                </select>
+            </div>
 
-        <label>Current Year of Study *</label>
-        <input type="text" name="year" required>
+            <button id="rzp-button1" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md text-lg transition duration-300">
+                Submit & Pay
+            </button>
+        </form>
+    </div>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-        <label>Mark Your Skill Level (1-10) *</label>
-        <input type="number" name="skills" min="1" max="10" required>
+<script  >
+    document.getElementById('rzp-button1').onclick = function (e) {
+    e.preventDefault();
 
-        <label>Joined Telegram & LinkedIn? *</label>
-        <select name="telegram_linkedin" required>
-            <option value="Yes">Yes</option>
-        </select>
+    // Validate form fields
+    var formData = {
+        "email": document.getElementById('email').value.trim(),
+        "name": document.getElementById('name').value.trim(),
+        "domain": document.getElementById('domain').value.trim(),
+        "qualification": document.getElementById('qualification').value.trim(),
+        "degree": document.getElementById('degree').value.trim(),
+        "year": document.getElementById('year').value.trim(),
+        "college": document.getElementById('college').value.trim(),
+        "contact": document.getElementById('contact').value.trim(),
+        "whatsapp": document.getElementById('whatsapp').value.trim(),
+        "telegram_contact": document.getElementById('telegram_contact').value.trim(),
+        "source": document.getElementById('source').value.trim()
+    };
 
-        <label>Where did you learn about OIB-SIP? *</label>
-        <select name="source" required>
-            <option value="Social Media">Social Media</option>
-            <option value="Job Portals">Job Portals</option>
-            <option value="Referral">Referral</option>
-            <option value="Campus Placement">Campus Placement</option>
-        </select>
+    if (Object.values(formData).some(value => value === "")) {
+        alert("Please fill in all required fields before proceeding with the payment.");
+        return;
+    }
 
-        <label>Acknowledge & Accept Terms *</label>
-        <select name="acknowledge" required>
-            <option value="Yes">Yes</option>
-        </select>
+    // Razorpay Payment Options
+    var options = {
+        "key": "rzp_test_BAyAAa4qrtDDFG",
+        "amount": "100", //  1 INR = 100 paise
+        "currency": "INR",
+        "description": "SkillNova Payment",
+        "image": "example.com/image/rzp.jpg",
+        "prefill": {
+            "email": formData.email,
+            "contact": formData.contact
+        },
+        "handler": function (response) {
+            // ✅ Payment successful, send data to backend
+            formData["razorpay_payment_id"] = response.razorpay_payment_id;
+            formData["razorpay_order_id"] = response.razorpay_order_id;
+            formData["razorpay_signature"] = response.razorpay_signature;
 
-        <label>Any Query? (GitHub, Leetcode, Resume link etc.)</label>
-        <textarea name="query"></textarea>
+            fetch("/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                credentials: "include",  // Ensures session cookies are sent
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert("✅ Payment Successful & Registration Saved!");
+                    window.location.href = "/thank-you";  // Redirect to success page
+                } else {
+                    alert("⚠️ Error: " + data.message);
+                }
+            })
+            .catch(error => {
+                alert("❌ Failed to save registration: " + error.message);
+            });
+        },
+        "modal": {
+            "ondismiss": function () {
+                if (confirm("Payment was not completed. Would you like to try again?")) {
+                    rzp1.open();  // Retry payment
+                } else {
+                    alert("❌ Payment Canceled. Please try again.");
+                }
+            }
+        }
+    };
 
-        <button type="submit">Submit</button>
-    </form>
+    var rzp1 = new Razorpay(options);
 
-</body>
-</html>
+    // 🔴 Handle payment failure event
+    rzp1.on('payment.failed', function (response) {
+        console.error("Payment failed", response);
+        alert("❌ Payment Failed: " + response.error.description);
+        fetch("/payment-failed", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: formData.email,
+                error_code: response.error.code,
+                error_description: response.error.description
+            })
+        });
+    });
+
+    rzp1.open();
+};
+
+</script>
+
+

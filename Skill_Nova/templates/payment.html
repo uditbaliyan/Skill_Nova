@@ -1,50 +1,151 @@
-<!-- templates/payment.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Complete Your Payment</title>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="SkillNova-main/skillnova.png" type="image/png">
+    <title>SkillNova - Registration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Payment</h1>
-    <button id="pay-button">Pay Now</button>
+<body class="antialiased text-gray-800 min-h-screen flex flex-col bg-gray-100">
+
+    <header class="fixed top-0 left-0 w-full bg-white shadow-md z-50">
+        <nav class="container mx-auto flex justify-between items-center py-4 px-6">
+            <a href="index.html" class="text-2xl font-bold text-black-600">SkillNova</a>
+        </nav>
+    </header>
+
+    <div class="container mx-auto mt-24 p-6 max-w-3xl bg-white shadow-lg rounded-lg">
+        <img src="skillnova.png" alt="SkillNova Logo" class="h-40 mx-auto mb-4">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">SkillNova Internship Registration</h2>
+        <p class="text-center text-gray-600 mb-6">Complete the form to register for your preferred internship domain.</p>
+
+        <form id="internship-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold">Email *</label>
+                    <input type="email" id="email" name="email" class="w-full border p-3 rounded-md" required>
+                </div>
+                <div>
+                    <label class="block font-semibold">Full Name *</label>
+                    <input type="text" id="name" name="name" class="w-full border p-3 rounded-md" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-semibold">Internship Domain *</label>
+                <select id="domain" name="domain" class="w-full border p-3 rounded-md" required>
+                    <option value="">Select</option>
+                    <option value="Web Development">Web Development</option>
+                    <option value="Android App Development">Android App Development</option>
+                    <option value="Data Science">Data Science</option>
+                    <option value="Java Programming">Java Programming</option>
+                    <option value="Python Programming">Python Programming</option>
+                    <option value="C++ Programming">C++ Programming</option>
+                    <option value="UI/UX Design">UI/UX Design</option>
+                    <option value="Artificial Intelligence">Artificial Intelligence</option>
+                    <option value="Machine Learning">Machine Learning</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block font-semibold">Highest Academic Qualification *</label>
+                <input type="text" id="qualification" name="qualification" class="w-full border p-3 rounded-md" required>
+            </div>
+
+            <div>
+                <label class="block font-semibold">Most Recent or Currently Pursuing Academic Degree *</label>
+                <input type="text" id="degree" name="degree" class="w-full border p-3 rounded-md" required>
+            </div>
+
+            <div>
+                <label class="block font-semibold">Current Year (Education) *</label>
+                <input type="text" id="year" name="year" class="w-full border p-3 rounded-md" required>
+            </div>
+
+            <div>
+                <label class="block font-semibold">College *</label>
+                <input type="text" id="college" name="college" class="w-full border p-3 rounded-md" required>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold">Contact No. *</label>
+                    <input type="tel" id="contact" name="contact" class="w-full border p-3 rounded-md" required>
+                </div>
+                <div>
+                    <label class="block font-semibold">WhatsApp Number *</label>
+                    <input type="tel" id="whatsapp" name="whatsapp" class="w-full border p-3 rounded-md" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-semibold">Where did you learn about SkillNova? *</label>
+                <select id="source" name="source" class="w-full border p-3 rounded-md" required>
+                    <option value="">Select</option>
+                    <option value="Social Media">Social Media (Instagram, LinkedIn, etc.)</option>
+                    <option value="Referral">Referral (Friends, Colleagues, Relatives, etc.)</option>
+                    <option value="Campus Placement">Campus Placement Cell/Coordinators</option>
+                </select>
+            </div>
+
+            <button id="rzp-button1" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md text-lg transition duration-300">
+                Submit & Pay
+            </button>
+        </form>
+    </div>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
-        document.getElementById('pay-button').onclick = function(e){
-            var options = {
-                "key": "{{ os.getenv('RAZORPAY_KEY') }}", // Pass the Razorpay Key from environment or server
-                "amount": "{{ order['amount'] }}", // Amount is in paise
-                "currency": "INR",
-                "name": "Internship Registration",
-                "description": "Payment for Internship",
-                "order_id": "{{ order['id'] }}",
-                "handler": function (response){
-                    // Post response to your callback route for verification
-                    var form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = "{{ url_for('payment_callback') }}";
-                    // Append the required fields
-                    for (const key in response) {
-                        if(response.hasOwnProperty(key)) {
-                            var input = document.createElement('input');
-                            input.type = 'hidden';
-                            input.name = key;
-                            input.value = response[key];
-                            form.appendChild(input);
-                        }
-                    }
-                    document.body.appendChild(form);
-                    form.submit();
-                },
-                "prefill": {
-                    "name": "{{ form_data['name'] }}",
-                    "email": "{{ form_data['email'] }}"
+        document.getElementById('rzp-button1').onclick = function (e) {
+    e.preventDefault();
+
+    // Validate form fields
+    var email = document.getElementById('email').value.trim();
+    var name = document.getElementById('name').value.trim();
+    var domain = document.getElementById('domain').value.trim();
+    var qualification = document.getElementById('qualification').value.trim();
+    var degree = document.getElementById('degree').value.trim();
+    var year = document.getElementById('year').value.trim();
+    var college = document.getElementById('college').value.trim();
+    var contact = document.getElementById('contact').value.trim();
+    var whatsapp = document.getElementById('whatsapp').value.trim();
+    var source = document.getElementById('source').value.trim();
+
+    if (!email || !name || !domain || !qualification || !degree || !year || !college || !contact || !whatsapp || !source) {
+        alert("Please fill in all required fields before proceeding with the payment.");
+        return; // Stop execution if any field is empty
+    }
+
+    // Payment options
+    var options = {
+        "key": "rzp_test_BAyAAa4qrtDDFG",
+        "amount": "100",  // 49 INR = 4900 paise
+        "currency": "INR",
+        "description": "SkillNova Payment",
+        "image": "example.com/image/rzp.jpg",
+        "prefill": {
+            "email": email,
+            "contact": contact
+        },
+        "handler": function (response) {
+            alert("Payment Successful: " + response.razorpay_payment_id);
+        },
+        "modal": {
+            "ondismiss": function () {
+                if (confirm("Are you sure you want to close the form?")) {
+                    console.log("Checkout form closed by the user");
+                } else {
+                    console.log("Complete the Payment");
                 }
-            };
-            var rzp1 = new Razorpay(options);
-            rzp1.open();
-            e.preventDefault();
+            }
         }
-    </script>
-</body>
-</html>
+    };
+
+    // Open Razorpay payment window
+    var rzp1 = new Razorpay(options);
+    rzp1.open();
+};
+</script>
+
+
