@@ -65,6 +65,13 @@ button:hover {
         <h1>AICTE OIB-SIP February Cohort</h1>
         <p>Enroll now for a virtual internship program!</p>
     </header>
+    {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+  {% endwith %}
 
     <form action="/submit" method="POST">
         <label>Full Name *</label>

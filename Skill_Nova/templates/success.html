@@ -59,13 +59,10 @@
   <div class="container">
     <h1>Success!</h1>
     <p>Your action was completed successfully.</p>
-    <button class="btn" onclick="goHome()">Go Home</button>
+    <button class="btn" ><a href="{{ url_for('home') }}"></a></button>
   </div>
   <script>
-    function goHome() {
-      // Redirect to home page
-      window.location.href = '/';
-    }
+
   </script>
 </body>
 </html>
