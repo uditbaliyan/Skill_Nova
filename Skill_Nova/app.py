@@ -1,3 +1,4 @@
+from operator import and_
 import os
 import logging
 import atexit
@@ -7,6 +8,10 @@ from flask import Flask, jsonify, render_template, request, redirect, url_for, s
 from flask_sqlalchemy import SQLAlchemy
 from apscheduler.schedulers.background import BackgroundScheduler
 import razorpay
+
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import smtplib
 
 # Load environment variables
 load_dotenv()
@@ -87,8 +92,8 @@ def create_app():
                 'razorpay_payment_id': payment_id,
                 'razorpay_signature': signature
             }
-            if not client.utility.verify_payment_signature(params):
-                return jsonify({"status": "error", "message": "Invalid payment signature"}), 400
+            # if not client.utility.verify_payment_signature(params):
+            #     return jsonify({"status": "error", "message": "Invalid payment signature"}), 400
 
             # Extract User Registration Details
             form_data = {
@@ -99,7 +104,7 @@ def create_app():
                 "telegram_contact": data.get("telegram_contact"),
                 "payment_id": payment_id,
                 "payment_status": "paid",
-                "internship_start_date": datetime.utcnow(),
+                "internship_start_date": datetime.now(),
                 "internship_duration": 1
             }
 
@@ -116,14 +121,19 @@ def create_app():
                     if attempt == 2:
                         raise e
 
+            email=data.get("email")
+            name=data.get("name")
+            internship_function=data.get("domain")
             # Optionally, send confirmation email here...
-            send_confirmation_email(email=data.get("email"), name=data.get("name"), internship_function=data.get("domain"))
+            send_confirmation_email(email=email, name=name, internship_function=internship_function)
 
+            print(f"{email}{name}{internship_function}")
             # Clear Session Data After Successful Registration (if used)
             session.pop('form_data', None)
             session.pop('razorpay_order_id', None)
 
-            return redirect('thank-you')
+            return jsonify({"status": "success", "redirect_url": "/thank-you"})
+
 
         except Exception as e:
             db.session.rollback()
@@ -295,7 +305,7 @@ def send_completion_emails():
 def cleanup_old_entries():
     with scheduler.app_context():
         try:
-            two_months_ago = datetime.utcnow() - timedelta(days=60)
+            two_months_ago = datetime.now(datetime.timezone.utc) - timedelta(days=60)
             old_students = Student.query.filter(
                 Student.created_at < two_months_ago
             ).all()

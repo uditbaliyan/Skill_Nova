@@ -153,14 +153,12 @@
             .then(data => {
                 if (data.status === "success") {
                     alert("✅ Payment Successful & Registration Saved!");
-                    window.location.href = "/thank-you";  // Redirect to success page
+                    window.location.href = data.redirect_url;  // Redirect properly
                 } else {
                     alert("⚠️ Error: " + data.message);
                 }
             })
-            .catch(error => {
-                alert("❌ Failed to save registration: " + error.message);
-            });
+
         },
         "modal": {
             "ondismiss": function () {
@@ -175,20 +173,6 @@
 
     var rzp1 = new Razorpay(options);
 
-    // 🔴 Handle payment failure event
-    rzp1.on('payment.failed', function (response) {
-        console.error("Payment failed", response);
-        alert("❌ Payment Failed: " + response.error.description);
-        fetch("/payment-failed", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email: formData.email,
-                error_code: response.error.code,
-                error_description: response.error.description
-            })
-        });
-    });
 
     rzp1.open();
 };
