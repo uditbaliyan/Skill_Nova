@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="SkillNova-main/skillnova.png" type="image/png">
+    <link rel="icon" href="{{ url_for('static', filename='/image/skillnova.png') }}" type="image/png">
     <title>SkillNova - Registration</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='form.css') }}">
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
 </head>
 <body class="antialiased text-gray-800 min-h-screen flex flex-col bg-gray-100">
 

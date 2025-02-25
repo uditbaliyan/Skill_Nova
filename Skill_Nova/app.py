@@ -53,6 +53,12 @@ class Student(db.Model):
     internship_start_date = db.Column(db.DateTime)
     internship_duration = db.Column(db.Integer)
     completion_email_sent = db.Column(db.Boolean, default=False)
+    # onboarding_email_sent = db.Column(db.Boolean, default=False)
+    # week_1_email_assignment_sent = db.Column(db.Boolean, default=False)
+    # week_2_email_assignment_sent = db.Column(db.Boolean, default=False)
+    # week_3_email_assignment_sent = db.Column(db.Boolean, default=False)
+    # week_4_email_assignment_sent = db.Column(db.Boolean, default=False)
+    # project_email_sent = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f'<Student {self.email}>'
@@ -70,6 +76,16 @@ def create_app():
     def home():
         logger.info("Home page accessed")
         return render_template('index.html')
+
+
+    @app.errorhandler(404)
+    def page_not_found(error):
+        return render_template('404.html')
+
+    # Custom 500 Error Handler
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        return render_template('500.html')
 
     @app.route('/form', methods=['GET'])
     def form():
@@ -252,7 +268,7 @@ def send_test_emails():
         finally:
             logger.info("=== Completed test email job ===")
 
-def send_daily_tasks():
+def send_weekly_tasks():
     with scheduler.app_context():
         try:
             students = Student.query.filter(
@@ -334,15 +350,12 @@ def send_weekly_emails():
         except Exception as e:
             logger.error(f"Weekly emails task failed: {str(e)}")
 
-
-
-
 def register_scheduler(sched):
     if Config.SCHEDULER_ENABLED and not os.environ.get('WERKZEUG_RUN_MAIN'):
         # Existing production jobs
         sched.add_job(id='weekly_emails', func=send_weekly_emails,trigger='cron', day_of_week='mon', hour=9)
         sched.add_job(id='cleanup', func=cleanup_old_entries, trigger='cron', day=1, hour=0)
-        sched.add_job(id='daily_tasks', func=send_daily_tasks, trigger='cron', hour=9, minute=0)
+        # sched.add_job(id='daily_tasks', func=send_weekly_tasks, trigger='cron', hour=9, minute=0)
         sched.add_job(id='completion_emails', func=send_completion_emails, trigger='cron', hour=10, minute=0)
 
         # Test job only in debug mode
