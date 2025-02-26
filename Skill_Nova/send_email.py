@@ -51,7 +51,11 @@ pdf_path_dir={"Web Development":"",
               "Machine Learning":""}
 
 
-internship=pdf_path_dir["Artificial Intelligence"]
-pdf_path = os.path.join(BASE_DIR, 'Task_pdf',internship)
+if __name__ == "__main__":
 
-send_email(subject="hehehe!!!!!", body="---------------",to_email="baliyanvdit@gmail.com",attachment_path=pdf_path)
+    internship=pdf_path_dir["Artificial Intelligence"]
+    pdf_path = os.path.join(BASE_DIR, 'Task_pdf',internship)
+
+    # send_email(subject="hehehe!!!!!", body="---------------",to_email="baliyanvdit@gmail.com",attachment_path=pdf_path)
+
+    # end main

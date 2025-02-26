@@ -1,12 +1,13 @@
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
+import os
 
-
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 def generate_certificate(name, internship):
     # Load the certificate template
-    template_path = "/home/udit/Documents/Github/002_Skill_Nova/Skill_Nova/certificate_templates/certificate_templates_.jpg"
-    output_path = "/home/udit/Documents/Github/002_Skill_Nova/Skill_Nova/gen_certificate/generated_certificate.png"
+    template_path = os.path.join(BASE_DIR, 'certificate_templates/certificate_templates_.jpg')
+    output_path = os.path.join(BASE_DIR, 'gen_certificate/generated_certificate.png')
     issue_date = datetime.today().strftime("%d-%m-%Y")
     img = Image.open(template_path)
     draw = ImageDraw.Draw(img)
@@ -41,8 +42,8 @@ def generate_internship_offer(name, internship):
     :param template_path: Path to the internship offer template image
     :param output_path: Path to save the generated offer letter
     """
-    template_path = "/home/udit/Documents/Github/002_Skill_Nova/Skill_Nova/certificate_templates/Internship_Offer_Letter.png"  # Path to the original template
-    output_path = "/home/udit/Documents/Github/002_Skill_Nova/Skill_Nova/gen_certificate/generated_Internship_Offer_Letter.png"  # Output file path
+    template_path = os.path.join(BASE_DIR, 'certificate_templates/Internship_Offer_Letter.png')
+    output_path = os.path.join(BASE_DIR, 'gen_certificate/generated_Internship_Offer_Letter.png')
     # Load the template image
     img = Image.open(template_path)
     draw = ImageDraw.Draw(img)
@@ -79,5 +80,6 @@ if __name__ == "__main__":
     internship="Android App Development"
 
     # generate_certificate(recipient_name, internship)
-    generate_internship_offer(recipient_name,internship)
+    # generate_internship_offer(recipient_name,internship)
+    print(f"{BASE_DIR}")
 # end main

@@ -13,7 +13,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from certificate_gen import generate_internship_offer, generate_certificate
-
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 # ------------------------------------------------------------------------------
 # Load environment variables from .env
 # ------------------------------------------------------------------------------
@@ -276,14 +276,20 @@ def send_confirmation_email(email, name, internship_function):
     """
     subject = "Internship Registration Successful."
     body = f""" 
-Dear {name},
+    Dear {name},
 
-Congratulations! Your registration for the {internship_function} at SkillNova has been successfully received.
-Our team will review your application, and we will get back to you shortly with the next steps.
+    Congratulations! Your registration for the {internship_function} at SkillNova has been successfully received.
 
-Best regards,
-SkillNova
-contact.skillnova@gmail.com 
+    Our team will review your application, and we will get back to you shortly with the next steps. 
+    Please keep an eye on your inbox for further updates.
+
+    If you have any questions in the meantime, feel free to reach out to us at contact.skillnova@gmail.com.
+
+    Looking forward to having you on board!
+
+    Best regards,
+    SkillNova
+    contact.skillnova@gmail.com 
 """
     send_email(email, subject, body)
 
@@ -306,13 +312,42 @@ def send_internship_details_email(email, name, internship_function):
     subject = "SkillNova Virtual Internship - Detailed Instructions"
     body = f"""Dear {name},
 
-Congratulations on your registration for the SkillNova Virtual Internship Program.
-Please find attached the detailed instructions for your internship in {internship_function}.
+        Congratulations! 🎉 Your registration for the SkillNova Virtual Internship Program has been successfully confirmed. We are excited to have you on board and look forward to helping you gain hands-on experience in your chosen domain.
 
-Best Regards,
-SkillNova Team
-contact.skillnova@gmail.com
-"""
+        Internship Details:
+        ✅ Internship Mode: 100% Virtual
+        ✅ Duration: 4 Week
+        ✅ Domain: {internship_function}
+        ✅ Work Structure: Weekly Assignments & Real-World Projects
+        ✅ Guidance & Mentorship: Support from industry professionals
+        ✅ Certificate of Completion: Upon successful completion of the program
+
+        Your Learning Experience:
+        During this internship, you will:
+        🔹 Work on structured assignments tailored to {internship_function}
+        🔹 Gain hands-on experience with real-world projects
+        🔹 Develop industry-relevant skills to enhance your career prospects
+        🔹 Receive guidance from experienced mentors
+
+        Project & Assignment Details:
+        Attached to this email, you will find a PDF containing details of the projects and assignments you will be working on during the internship.
+
+        📌 Weekly Tasks:
+        Every week, you will receive a new assignment along with project submission links.
+        Assignments and projects must be completed within the given deadlines.
+        Submission links will be shared with you via email on a weekly basis.
+
+        Please download and review the attached project document carefully. 
+        If you have any queries, feel free to reach out to us at contact.skillnova@gmail.com or reply to this email.
+
+        We look forward to seeing you grow and succeed in this program! 🚀
+
+        Best Regards,
+        SkillNova Team
+        www.skillnovatech.in
+        contact.skillnova@gmail.com
+        """
+
     internship = pdf_path_dir.get(internship_function, "")
     pdf_path = os.path.join(Config.BASE_DIR, 'Task_pdf', internship) if internship else None
     send_email(
@@ -329,15 +364,15 @@ def send_internship_loi_email(email, name, internship_function):
     subject = "SkillNova Virtual Internship - Offer Letter"
     body = f"""Dear {name},
 
-Congratulations on your registration for the SkillNova Virtual Internship Program.
-Please find attached your Offer Letter for the internship in {internship_function}.
+        Congratulations on your registration for the SkillNova Virtual Internship Program.
+        Please find attached your Offer Letter for the internship in {internship_function}.
 
-Best Regards,
-SkillNova Team
-contact.skillnova@gmail.com
+        Best Regards,
+        SkillNova Team
+        contact.skillnova@gmail.com
 """
     generate_internship_offer(name=name, internship=internship_function)
-    attachment_path = "/home/udit/Documents/Github/002_Skill_Nova/Skill_Nova/gen_certificate/generated_Internship_Offer_Letter.png"
+    attachment_path = os.path.join(BASE_DIR, 'gen_certificate/generated_Internship_Offer_Letter.png')
     send_email(
         to_email=email,
         subject=subject,
@@ -404,7 +439,7 @@ def send_completion_emails():
                         generate_certificate(name=student.name, internship=student.internship_function)
                         send_email(
                             student.email, subject, body,
-                            attachment_paths=["/home/udit/Documents/Github/002_Skill_Nova/Skill_Nova/gen_certificate/generated_certificate.png"]
+                            attachment_paths= os.path.join(BASE_DIR, 'gen_certificate/generated_certificate.png')
                         )
                         student.completion_email_sent = True
                         db.session.commit()
