@@ -7,7 +7,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 def generate_certificate(name, internship):
     # Load the certificate template
     template_path = os.path.join(BASE_DIR, 'certificate_templates/certificate_templates_.jpg')
-    output_path = os.path.join(BASE_DIR, 'gen_certificate/generated_certificate.png')
+    output_path = os.path.join(BASE_DIR, 'gen_certificate/generated_certificate.jpg')
     issue_date = datetime.today().strftime("%d-%m-%Y")
     img = Image.open(template_path)
     draw = ImageDraw.Draw(img)
@@ -42,8 +42,8 @@ def generate_internship_offer(name, internship):
     :param template_path: Path to the internship offer template image
     :param output_path: Path to save the generated offer letter
     """
-    template_path = os.path.join(BASE_DIR, 'certificate_templates/Internship_Offer_Letter.png')
-    output_path = os.path.join(BASE_DIR, 'gen_certificate/generated_Internship_Offer_Letter.png')
+    template_path = os.path.join(BASE_DIR, 'certificate_templates/Internship_Offer_Letter.jpg')
+    output_path = os.path.join(BASE_DIR, 'gen_certificate/generated_Internship_Offer_Letter.jpg')
     # Load the template image
     img = Image.open(template_path)
     draw = ImageDraw.Draw(img)

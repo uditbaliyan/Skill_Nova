@@ -372,7 +372,7 @@ def send_internship_loi_email(email, name, internship_function):
         contact.skillnova@gmail.com
 """
     generate_internship_offer(name=name, internship=internship_function)
-    attachment_path = os.path.join(BASE_DIR, 'gen_certificate/generated_Internship_Offer_Letter.png')
+    attachment_path = os.path.join(BASE_DIR, 'gen_certificate/generated_Internship_Offer_Letter.jpg')
     send_email(
         to_email=email,
         subject=subject,
@@ -388,16 +388,21 @@ def send_weekly_emails():
     """Send weekly internship emails to students with a paid status, ensuring a one-week gap."""
     
     week_tasks = {
-        1: "Week 1 Tasks",
-        2: "Week 2 Tasks",
-        3: "Week 3 Tasks",
-        4: "Week 4 Tasks",
+        "Web Development": ["https://docs.google.com/forms/d/e/1FAIpQLScheF-rGdySwRWrg-ARZoxUi1ncwrYnLdWtua3nx9U3TfNocg/viewform","","",""],
+        "Android App Development": ["https://docs.google.com/forms/d/e/1FAIpQLSeojl8IdBaergAV62-sEYboyDssugt86WvjOJZGZUdPkhKT7A/viewform","","",""],
+        "Data Science": ["https://docs.google.com/forms/d/e/1FAIpQLSeMHIkZ1MDPsGSgHyA6waUw4xvnnNj9C-rb1qAcUhdjboeubA/viewform","","",""],
+        "Java Programming": ["","","",""],
+        "Python Programming": ["https://docs.google.com/forms/d/e/1FAIpQLSc0POGnXXdgBoJwry0c5zMT3cHJ5NFaZQB2pi4Iv3n55kS-jA/viewform","","",""],
+        "C++ Programming": ["https://docs.google.com/forms/d/e/1FAIpQLSdoIrEig_S3hcppQcLn1DJe2BN7n7JTzTyJMLDmZYQOlmE5oA/viewform","","",""],
+        "UI/UX Design": ["","","",""],
+        "Artificial Intelligence": ["https://docs.google.com/forms/d/e/1FAIpQLSexkJ8XfsKvrDs3RIhAU0T6Om-urNKLERXSPUBKiN3YoNbMDg/viewform","","",""],
+        "Machine Learning": ["https://docs.google.com/forms/d/e/1FAIpQLSeImUGzaT735c9aDF6g_XYEz35kVf8KGk2CCzDXYWIBeOgFqA/viewform","","",""]
     }
     
     with app.app_context():
         try:
             students = Student.query.filter_by(payment_status="paid").all()
-            now = datetime.utcnow()
+            now = datetime.now()
 
             for student in students:
                 if student.internship_week > 4:  # Prevent sending emails beyond week 4
@@ -410,7 +415,8 @@ def send_weekly_emails():
                     continue  
 
                 subject = "Weekly Internship Update"
-                task_details = week_tasks.get(student.internship_week, "No tasks available.")
+                task_details = week_tasks[student.internship_function][student.intership_week-1]
+
                 body = f"Hi {student.name},\n\nHere are your tasks for {task_details}."
 
                 send_email(student.email, subject, body)
@@ -439,7 +445,7 @@ def send_completion_emails():
                         generate_certificate(name=student.name, internship=student.internship_function)
                         send_email(
                             student.email, subject, body,
-                            attachment_paths= os.path.join(BASE_DIR, 'gen_certificate/generated_certificate.png')
+                            attachment_paths= os.path.join(BASE_DIR, 'gen_certificate/generated_certificate.jpg')
                         )
                         student.completion_email_sent = True
                         db.session.commit()
