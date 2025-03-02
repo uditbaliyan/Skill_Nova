@@ -1,6 +1,7 @@
 import os
 import logging
 import atexit
+import time  # For sleep in retry loops
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, session
@@ -8,14 +9,11 @@ from flask_sqlalchemy import SQLAlchemy
 from apscheduler.schedulers.background import BackgroundScheduler
 import razorpay
 import smtplib
-
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-from certificate_gen import generate_internship_offer,generate_certificate
-
-
-
+from certificate_gen import generate_internship_offer, generate_certificate
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 # ------------------------------------------------------------------------------
 # Load environment variables from .env
 # ------------------------------------------------------------------------------
@@ -33,7 +31,7 @@ logger = logging.getLogger(__name__)
 db = SQLAlchemy()
 
 # ------------------------------------------------------------------------------
-# Configuration class
+# Production-ready configuration class
 # ------------------------------------------------------------------------------
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret")
@@ -43,20 +41,28 @@ class Config:
     SCHEDULER_JOB_DEFAULTS = {'coalesce': True, 'max_instances': 1}
     SCHEDULER_ENABLED = True
     
-    # Database
+    # Database configuration:
+    # Use DATABASE_URL from the environment (e.g., PostgreSQL) for production,
+    # fallback to SQLite for local development (not recommended for heavy traffic)
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(BASE_DIR, 'instance/students.db')}"
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        "DATABASE_URL",
+        f"sqlite:///{os.path.join(BASE_DIR, 'instance/students.db')}"
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Engine options for connection pooling in production
     
-    # Session
+    # Session lifetime
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=15)
     
     # Razorpay credentials
     RAZORPAY_KEY = os.getenv("RAZORPAY_KEY")
     RAZORPAY_SECRET = os.getenv("RAZORPAY_SECRET")
+    
+    # (Optional) You could also centralize SMTP and other service configurations here
 
 # ------------------------------------------------------------------------------
-# Database model
+# Database model remains unchanged
 # ------------------------------------------------------------------------------
 class Student(db.Model):
     __tablename__ = 'students'
@@ -72,8 +78,9 @@ class Student(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now, index=True)
     internship_start_date = db.Column(db.DateTime)
     internship_duration = db.Column(db.Integer)
+    internship_week = db.Column(db.Integer, default=1)
+    last_email_sent = db.Column(db.DateTime, nullable=True)  # NEW FIELD
     completion_email_sent = db.Column(db.Boolean, default=False)
-    # Tracks if internship details email was sent loi
     internship_details_email_sent = db.Column(db.Boolean, default=False)
     internship_loi_email_sent = db.Column(db.Boolean, default=False)
 
@@ -81,13 +88,13 @@ class Student(db.Model):
         return f'<Student {self.email}>'
 
 # ------------------------------------------------------------------------------
-# Create and configure Flask app via factory
+# Flask Application Factory
 # ------------------------------------------------------------------------------
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # Initialize SQLAlchemy with this app
+    # Initialize SQLAlchemy with the app
     db.init_app(app)
 
     # Initialize Razorpay client
@@ -109,12 +116,7 @@ def create_app():
     @app.route('/submit', methods=['POST'])
     def submit():
         """
-        Handles the form submission and payment verification from the frontend.
-        Expects JSON data with:
-          - razorpay_payment_id
-          - razorpay_order_id
-          - razorpay_signature
-          - name, email, domain, whatsapp, telegram_contact
+        Handles form submission and payment verification.
         """
         try:
             data = request.json
@@ -122,22 +124,21 @@ def create_app():
                 return jsonify({"status": "error", "message": "No data received"}), 400
 
             payment_id = data.get("razorpay_payment_id")
-            order_id = data.get("razorpay_order_id")
+            order_id = session.get("razorpay_order_id")  # Retrieve stored order ID
             signature = data.get("razorpay_signature")
             name = data.get("name")
             email = data.get("email")
             internship_function = data.get("domain")
 
-            # (Optional) Validate payment signature in production:
-            # params = {
-            #     'razorpay_order_id': order_id,
-            #     'razorpay_payment_id': payment_id,
-            #     'razorpay_signature': signature
-            # }
-            # try:
-            #     client.utility.verify_payment_signature(params)
-            # except razorpay.errors.SignatureVerificationError:
-            #     return jsonify({"status": "error", "message": "Invalid payment signature"}), 400
+            # Verify payment
+            try:
+                client.utility.verify_payment_signature({
+                    "razorpay_order_id": order_id,
+                    "razorpay_payment_id": payment_id,
+                    "razorpay_signature": signature
+                })
+            except razorpay.errors.SignatureVerificationError:
+                return jsonify({"status": "error", "message": "Payment verification failed"}), 400
 
             form_data = {
                 "name": name,
@@ -154,45 +155,47 @@ def create_app():
             # Save to database with retry logic
             for attempt in range(3):
                 try:
-                    db.session.begin()
                     new_student = Student(**form_data)
                     db.session.add(new_student)
                     db.session.commit()
                     break
-                except Exception as e:
+                except Exception as db_error:
                     db.session.rollback()
                     if attempt == 2:
-                        raise e
+                        logging.error(f"Database commit failed: {db_error}")
+                        return jsonify({"status": "error", "message": "Database error"}), 500
+                    time.sleep(1)
 
-            # Immediately send a confirmation email
+            # Send confirmation email
             send_confirmation_email(email, name, internship_function)
 
-            # Clear session data if used
-            session.pop('form_data', None)
+            # Clear session
             session.pop('razorpay_order_id', None)
 
             return jsonify({"status": "success", "redirect_url": "/thank-you"})
 
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error processing payment/registration: {str(e)}")
+            logging.error(f"Error processing payment/registration: {str(e)}")
             return jsonify({"status": "error", "message": str(e)}), 500
+
 
     @app.route('/payment-failed', methods=['POST'])
     def payment_failed():
         """
-        Logs payment failures from the frontend or Razorpay webhook.
+        Logs payment failures.
         """
         try:
             data = request.json
             email = data.get("email")
             error_code = data.get("error_code")
             error_description = data.get("error_description")
-            logger.warning(f"Payment failed for {email}. Error: {error_code} - {error_description}")
+            logging.warning(f"Payment failed for {email}. Error: {error_code} - {error_description}")
             return jsonify({"status": "error", "message": "Payment failed, please try again."}), 400
         except Exception as e:
-            logger.error(f"Error logging failed payment: {str(e)}")
+            logging.error(f"Error logging failed payment: {str(e)}")
             return jsonify({"status": "error", "message": "Could not log failed payment."}), 500
+
 
     @app.route('/thank-you')
     def thank_you():
@@ -219,90 +222,218 @@ def create_app():
     return app
 
 # ------------------------------------------------------------------------------
-# APScheduler Task: Send Internship Details After 24 Hours
+# Email sending with improved reliability (retry logic)
 # ------------------------------------------------------------------------------
-def send_internship_details_if_due():
+def send_email(to_email, subject, body, attachment_paths=None):
     """
-    Runs periodically (e.g., every hour) to check if 24 hours have passed
-    since the student started the internship. If yes and the internship
-    details email hasn't been sent, send it now.
+    Sends an email via SMTP with a retry loop.
     """
-    with app.app_context():
-        try:
-            now = datetime.now()
-            # Filter students who are paid, haven't received the details email yet
-            students = Student.query.filter_by(
-                payment_status='paid',
-                internship_details_email_sent=False
-            ).all()
+    try:
+        sender_email = os.getenv("EMAIL_USER")
+        password = os.getenv("EMAIL_PASSWORD")
 
-            for student in students:
-                # Check if 24 hours have passed hours=4
-                if student.internship_start_date:
-                    due_time = student.internship_start_date + timedelta(seconds=40)
-                    if now >= due_time:
-                        # Send the internship details email
-                        send_internship_details_email(
-                            student.email,
-                            student.name,
-                            student.internship_function
-                        )
-                        # Mark as sent
-                        student.internship_details_email_sent = True
-                        db.session.commit()
+        if not sender_email or not password:
+            raise ValueError("Missing email credentials (EMAIL_USER, EMAIL_PASSWORD)")
 
-        except Exception as e:
-            logger.error(f"Error in send_internship_details_if_due: {str(e)}")
+        # Construct message
+        message = MIMEMultipart()
+        message["From"] = sender_email
+        message["To"] = to_email
+        message["Subject"] = subject
+        message.attach(MIMEText(body, "plain"))
 
+        # Handle attachments (supports single path or list of paths)
+        if attachment_paths:
+            attachments = attachment_paths if isinstance(attachment_paths, list) else [attachment_paths]
+            for attachment_path in attachments:
+                if attachment_path and os.path.isfile(attachment_path):
+                    with open(attachment_path, "rb") as f:
+                        file_data = f.read()
+                    attachment = MIMEText(file_data, "base64", _charset="utf-8")
+                    attachment.add_header('Content-Disposition', 'attachment', filename=os.path.basename(attachment_path))
+                    message.attach(attachment)
 
-def send_internship_loi_if_due():
+        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", 587))
+
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                with smtplib.SMTP(smtp_server, smtp_port) as server:
+                    server.starttls()
+                    server.login(sender_email, password)
+                    server.send_message(message)
+                logger.info(f"Email sent to {to_email}")
+                break  # Break out of loop on success
+            except Exception as e:
+                logger.error(f"Attempt {attempt + 1}: Email failed to {to_email}: {str(e)}")
+                if attempt == max_attempts - 1:
+                    raise
+                time.sleep(2)
+    except Exception as e:
+        logger.error(f"Final failure sending email to {to_email}: {str(e)}")
+        raise
+
+def send_confirmation_email(email, name, internship_function):
     """
-    Runs periodically (e.g., every hour) to check if 24 hours have passed
-    since the student started the internship. If yes and the internship
-    details email hasn't been sent, send it now.
+    Sends a registration confirmation email.
     """
-    with app.app_context():
-        try:
-            now = datetime.now()
-            # Filter students who are paid, haven't received the details email yet
-            students = Student.query.filter_by(
-                payment_status='paid',
-                internship_loi_email_sent=False
-            ).all()
+    subject = "Internship Registration Successful."
+    body = f""" 
+    Dear {name},
 
-            for student in students:
-                # Check if 24 hours have passed hours=4
-                if student.internship_start_date:
-                    due_time = student.internship_start_date + timedelta(seconds=40)
-                    if now >= due_time:
-                        # Send the internship details email
-                        send_internship_details_email(
-                            student.email,
-                            student.name,
-                            student.internship_function
-                        )
-                        # Mark as sent
-                        student.internship_details_email_sent = True
-                        db.session.commit()
+    Congratulations! Your registration for the {internship_function} at SkillNova has been successfully received.
 
-        except Exception as e:
-            logger.error(f"Error in send_internship_details_if_due: {str(e)}")
+    Our team will review your application, and we will get back to you shortly with the next steps. 
+    Please keep an eye on your inbox for further updates.
 
+    If you have any questions in the meantime, feel free to reach out to us at contact.skillnova@gmail.com.
 
+    Looking forward to having you on board!
+
+    Best regards,
+    SkillNova
+    contact.skillnova@gmail.com 
+"""
+    send_email(email, subject, body)
+
+def send_internship_details_email(email, name, internship_function):
+    """
+    Sends internship details email (with attached PDF) after a delay.
+    """
+    pdf_path_dir = {
+        "Web Development": "web-dev.pdf",
+        "Android App Development": "",
+        "Data Science": "data-science.pdf",
+        "Java Programming": "java-prog.pdf",
+        "Python Programming": "Python.pdf",
+        "C++ Programming": "c++prog.pdf",
+        "UI/UX Design": "ui-ux.pdf",
+        "Artificial Intelligence": "ai.pdf",
+        "Machine Learning": "ML.pdf"
+    }
+    
+    subject = "SkillNova Virtual Internship - Detailed Instructions"
+    body = f"""Dear {name},
+
+        Congratulations! 🎉 Your registration for the SkillNova Virtual Internship Program has been successfully confirmed. We are excited to have you on board and look forward to helping you gain hands-on experience in your chosen domain.
+
+        Internship Details:
+        ✅ Internship Mode: 100% Virtual
+        ✅ Duration: 4 Week
+        ✅ Domain: {internship_function}
+        ✅ Work Structure: Weekly Assignments & Real-World Projects
+        ✅ Guidance & Mentorship: Support from industry professionals
+        ✅ Certificate of Completion: Upon successful completion of the program
+
+        Your Learning Experience:
+        During this internship, you will:
+        🔹 Work on structured assignments tailored to {internship_function}
+        🔹 Gain hands-on experience with real-world projects
+        🔹 Develop industry-relevant skills to enhance your career prospects
+        🔹 Receive guidance from experienced mentors
+
+        Project & Assignment Details:
+        Attached to this email, you will find a PDF containing details of the projects and assignments you will be working on during the internship.
+
+        📌 Weekly Tasks:
+        Every week, you will receive a new assignment along with project submission links.
+        Assignments and projects must be completed within the given deadlines.
+        Submission links will be shared with you via email on a weekly basis.
+
+        Please download and review the attached project document carefully. 
+        If you have any queries, feel free to reach out to us at contact.skillnova@gmail.com or reply to this email.
+
+        We look forward to seeing you grow and succeed in this program! 🚀
+
+        Best Regards,
+        SkillNova Team
+        www.skillnovatech.in
+        contact.skillnova@gmail.com
+        """
+
+    internship = pdf_path_dir.get(internship_function, "")
+    pdf_path = os.path.join(Config.BASE_DIR, 'Task_pdf', internship) if internship else None
+    send_email(
+        to_email=email,
+        subject=subject,
+        body=body,
+        attachment_paths=pdf_path
+    )
+
+def send_internship_loi_email(email, name, internship_function):
+    """
+    Sends an internship offer letter email.
+    """
+    subject = "SkillNova Virtual Internship - Offer Letter"
+    body = f"""Dear {name},
+
+        Congratulations on your registration for the SkillNova Virtual Internship Program.
+        Please find attached your Offer Letter for the internship in {internship_function}.
+
+        Best Regards,
+        SkillNova Team
+        contact.skillnova@gmail.com
+"""
+    generate_internship_offer(name=name, internship=internship_function)
+    attachment_path = os.path.join(BASE_DIR, 'gen_certificate/generated_Internship_Offer_Letter.jpg')
+    send_email(
+        to_email=email,
+        subject=subject,
+        body=body,
+        attachment_paths=attachment_path
+    )
 
 # ------------------------------------------------------------------------------
-# Scheduled Tasks 
+# Scheduled Tasks
 # ------------------------------------------------------------------------------
+
 def send_weekly_emails():
+    """Send weekly internship emails to students with a paid status, ensuring a one-week gap."""
+    
+    week_tasks = {
+        "Web Development": ["https://docs.google.com/forms/d/e/1FAIpQLScheF-rGdySwRWrg-ARZoxUi1ncwrYnLdWtua3nx9U3TfNocg/viewform","","",""],
+        "Android App Development": ["https://docs.google.com/forms/d/e/1FAIpQLSeojl8IdBaergAV62-sEYboyDssugt86WvjOJZGZUdPkhKT7A/viewform","","",""],
+        "Data Science": ["https://docs.google.com/forms/d/e/1FAIpQLSeMHIkZ1MDPsGSgHyA6waUw4xvnnNj9C-rb1qAcUhdjboeubA/viewform","","",""],
+        "Java Programming": ["","","",""],
+        "Python Programming": ["https://docs.google.com/forms/d/e/1FAIpQLSc0POGnXXdgBoJwry0c5zMT3cHJ5NFaZQB2pi4Iv3n55kS-jA/viewform","","",""],
+        "C++ Programming": ["https://docs.google.com/forms/d/e/1FAIpQLSdoIrEig_S3hcppQcLn1DJe2BN7n7JTzTyJMLDmZYQOlmE5oA/viewform","","",""],
+        "UI/UX Design": ["","","",""],
+        "Artificial Intelligence": ["https://docs.google.com/forms/d/e/1FAIpQLSexkJ8XfsKvrDs3RIhAU0T6Om-urNKLERXSPUBKiN3YoNbMDg/viewform","","",""],
+        "Machine Learning": ["https://docs.google.com/forms/d/e/1FAIpQLSeImUGzaT735c9aDF6g_XYEz35kVf8KGk2CCzDXYWIBeOgFqA/viewform","","",""]
+    }
+    
     with app.app_context():
         try:
             students = Student.query.filter_by(payment_status="paid").all()
+            now = datetime.now()
+
             for student in students:
+                if student.internship_week > 4:  # Prevent sending emails beyond week 4
+                    logger.info(f"Skipping {student.email}: Internship completed.")
+                    continue  
+
+                # Check if at least 7 days have passed since the last email
+                if student.last_email_sent and (now - student.last_email_sent).days < 6:
+                    logger.info(f"Skipping {student.email}: Less than 7 days since the last email.")
+                    continue  
+
                 subject = "Weekly Internship Update"
-                body = f"Hi {student.name},\n\nHere are your tasks for this week..."
+                task_details = week_tasks[student.internship_function][student.intership_week-1]
+
+                body = f"Hi {student.name},\n\nHere are your tasks for {task_details}."
+
                 send_email(student.email, subject, body)
+                logger.info(f"Sent email to {student.email} for {task_details}")
+
+                # Update internship week and last email timestamp
+                student.internship_week += 1
+                student.last_email_sent = now
+                db.session.commit()
+
         except Exception as e:
-            logger.error(f"Error in send_weekly_emails: {str(e)}")
+            logger.error(f"Error in send_weekly_emails: {str(e)}", exc_info=True)
+
 
 def send_completion_emails():
     with app.app_context():
@@ -311,12 +442,15 @@ def send_completion_emails():
             students = Student.query.filter_by(payment_status='paid', completion_email_sent=False).all()
             for student in students:
                 if student.internship_start_date:
-                    end_date = student.internship_start_date + timedelta(days=30 * student.internship_duration)
+                    end_date = student.internship_start_date + timedelta(days=28 * student.internship_duration)
                     if now >= end_date:
                         subject = "Internship Completion Certificate"
                         body = f"Congratulations {student.name}!\n\nYou've successfully completed your internship."
-                        generate_certificate(name=student.name,internship=student.internship_function)
-                        send_email(student.email, subject, body,attachment_paths=["/home/udit/Documents/Github/002_Skill_Nova/Skill_Nova/gen_certificate/generated_certificate.png"])
+                        generate_certificate(name=student.name, internship=student.internship_function)
+                        send_email(
+                            student.email, subject, body,
+                            attachment_paths= os.path.join(BASE_DIR, 'gen_certificate/generated_certificate.jpg')
+                        )
                         student.completion_email_sent = True
                         db.session.commit()
         except Exception as e:
@@ -335,200 +469,35 @@ def cleanup_old_entries():
             logger.error(f"Cleanup failed: {str(e)}")
             db.session.rollback()
 
+def send_internship_details_if_due():
+    with app.app_context():
+        try:
+            now = datetime.now()
+            students = Student.query.filter_by(payment_status='paid', internship_details_email_sent=False).all()
+            for student in students:
+                if student.internship_start_date:
+                    due_time = student.internship_start_date + timedelta(hours=10)
+                    if now >= due_time:
+                        send_internship_details_email(student.email, student.name, student.internship_function)
+                        student.internship_details_email_sent = True
+                        db.session.commit()
+        except Exception as e:
+            logger.error(f"Error in send_internship_details_if_due: {str(e)}")
 
-
-
-
-
-def send_email(to_email, subject, body, attachment_paths=None):
-    """
-    Sends an email using SMTP credentials stored in .env.
-    Optionally attach a PDF or any file if attachment_path is provided.
-    """
-    try:
-        sender_email = os.getenv("EMAIL_USER")
-        password = os.getenv("EMAIL_PASSWORD")
-
-        if not sender_email or not password:
-            raise ValueError("Missing email credentials (EMAIL_USER, EMAIL_PASSWORD)")
-
-        # Construct message
-        message = MIMEMultipart()
-        message["From"] = sender_email
-        message["To"] = to_email
-        message["Subject"] = subject
-        message.attach(MIMEText(body, "plain"))
-
-        # Attach files if provided
-        if attachment_paths:
-            for attachment_path in attachment_paths:
-                if attachment_path and os.path.isfile(attachment_path):
-                    with open(attachment_path, "rb") as f:
-                        file_data = f.read()
-                    attachment = MIMEText(file_data, "base64", _charset="utf-8")
-                    attachment.add_header('Content-Disposition', 'attachment', filename=os.path.basename(attachment_path))
-                    message.attach(attachment)
-
-        # Send via SMTP
-        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.getenv("SMTP_PORT", 587))
-
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(sender_email, password)
-            server.send_message(message)
-
-        logger.info(f"Email sent to {to_email}")
-
-    except Exception as e:
-        logger.error(f"Email failed to {to_email}: {str(e)}")
-        raise
-
-
-
-def send_confirmation_email(email, name, internship_function):
-    """
-    Sends a simple registration confirmation email immediately.
-    """
-    subject = "Internship Registration Successful."
-    body = f""" 
-    Dear {name},
-
-    Congratulations! Your registration for the {internship_function} at SkillNova has been successfully received.
-
-    Our team will review your application, and we will get back to you shortly with the next steps. 
-    Please keep an eye on your inbox for further updates.
-
-    If you have any questions in the meantime, feel free to reach out to us at contact.skillnova@gmail.com.
-
-    Looking forward to having you on board!
-
-    Best regards,
-    SkillNova
-    contact.skillnova@gmail.com 
-    """
-    send_email(email, subject, body)
-
-
-def send_internship_details_email(email, name, internship_function):
-    """
-    This function sends the detailed internship email **24 hours** after registration.
-    RQ enqueues this function and runs it in a separate worker process.
-    """
-    pdf_path_dir={"Web Development":"web-dev.pdf",
-              "Android App Development":"",
-              "Data Science":"data-science.pdf",
-              "Java Programming":"java-prog.pdf",
-              "Python Programming":"Python.pdf",
-              "C++ Programming":"c++prog.pdf",
-              "UI/UX Design":"ui-ux.pdf",
-              "Artificial Intelligence":"ai.pdf",
-              "Machine Learning":"ML.pdf"}
-    
-    subject = "SkillNova Virtual Internship - Detailed Instructions"
-    body = f"""Dear {name},
-
-        Congratulations! 🎉 Your registration for the SkillNova Virtual Internship Program has been successfully confirmed. We are excited to have you on board and look forward to helping you gain hands-on experience in your chosen domain.
-
-        Internship Details:
-        ✅ Internship Mode: 100% Virtual
-        ✅ Duration: 4 Week
-        ✅ Domain: {internship_function}
-        ✅ Work Structure: Weekly Assignments & Real-World Projects
-        ✅ Guidance & Mentorship: Support from industry professionals
-        ✅ Certificate of Completion: Upon successful completion of the program
-
-        Your Learning Experience:
-        During this internship, you will:
-        🔹 Work on structured assignments tailored to {internship_function}
-        🔹 Gain hands-on experience with real-world projects
-        🔹 Develop industry-relevant skills to enhance your career prospects
-        🔹 Receive guidance from experienced mentors
-
-        Project & Assignment Details:
-        Attached to this email, you will find a PDF containing details of the projects and assignments you will be working on during the internship.
-
-        📌 Weekly Tasks:
-        Every week, you will receive a new assignment along with project submission links.
-        Assignments and projects must be completed within the given deadlines.
-        Submission links will be shared with you via email on a weekly basis.
-
-        Please download and review the attached project document carefully. 
-        If you have any queries, feel free to reach out to us at contact.skillnova@gmail.com or reply to this email.
-
-        We look forward to seeing you grow and succeed in this program! 🚀
-
-        Best Regards,
-        SkillNova Team
-        www.skillnovatech.in
-        contact.skillnova@gmail.com
-        """
-    # If you have a PDF or other attachment:
-    internship=pdf_path_dir[internship_function]
-    pdf_path = os.path.join(Config.BASE_DIR, 'Task_pdf',internship)
-    # pdf_path = None
-
-    print(f"{pdf_path}")
-    send_email(
-        to_email=email,
-        subject=subject,
-        body=body,
-        attachment_paths=pdf_path
-    )
-
-
-def send_internship_loi_email(email, name, internship_function):
-    """
-    This function sends the detailed internship email **24 hours** after registration.
-    RQ enqueues this function and runs it in a separate worker process.
-    """
-    
-    subject = "SkillNova Virtual Internship - Detailed Instructions"
-    body = f"""Dear {name},
-
-        Congratulations! 🎉 Your registration for the SkillNova Virtual Internship Program has been successfully confirmed. We are excited to have you on board and look forward to helping you gain hands-on experience in your chosen domain.
-
-        Internship Details:
-        ✅ Internship Mode: 100% Virtual
-        ✅ Duration: 4 Week
-        ✅ Domain: {internship_function}
-        ✅ Work Structure: Weekly Assignments & Real-World Projects
-        ✅ Guidance & Mentorship: Support from industry professionals
-        ✅ Certificate of Completion: Upon successful completion of the program
-
-        Your Learning Experience:
-        During this internship, you will:
-        🔹 Work on structured assignments tailored to {internship_function}
-        🔹 Gain hands-on experience with real-world projects
-        🔹 Develop industry-relevant skills to enhance your career prospects
-        🔹 Receive guidance from experienced mentors
-
-        Project & Assignment Details:
-        Attached to this email, you will find a PDF containing details of the projects and assignments you will be working on during the internship.
-
-        📌 Weekly Tasks:
-        Every week, you will receive a new assignment along with project submission links.
-        Assignments and projects must be completed within the given deadlines.
-        Submission links will be shared with you via email on a weekly basis.
-
-        Please download and review the attached project document carefully. 
-        If you have any queries, feel free to reach out to us at contact.skillnova@gmail.com or reply to this email.
-
-        We look forward to seeing you grow and succeed in this program! 🚀
-
-        Best Regards,
-        SkillNova Team
-        www.skillnovatech.in
-        contact.skillnova@gmail.com
-        """
-    generate_internship_offer(name=name,internship=internship_function)
-    send_email(
-        to_email=email,
-        subject=subject,
-        body=body,
-        attachment_paths="/home/udit/Documents/Github/002_Skill_Nova/Skill_Nova/gen_certificate/generated_Internship_Offer_Letter.png"
-    )
-
+def send_internship_loi_if_due():
+    with app.app_context():
+        try:
+            now = datetime.now()
+            students = Student.query.filter_by(payment_status='paid', internship_loi_email_sent=False).all()
+            for student in students:
+                if student.internship_start_date:
+                    due_time = student.internship_start_date + timedelta(seconds=40)
+                    if now >= due_time:
+                        send_internship_loi_email(student.email, student.name, student.internship_function)
+                        student.internship_loi_email_sent = True
+                        db.session.commit()
+        except Exception as e:
+            logger.error(f"Error in send_internship_loi_if_due: {str(e)}")
 
 # ------------------------------------------------------------------------------
 # Main Entry Point
@@ -538,51 +507,45 @@ if __name__ == '__main__':
 
     scheduler = BackgroundScheduler()
     if app.config["SCHEDULER_ENABLED"]:
-        # Check for internship details email every hour
         scheduler.add_job(
             id='send_internship_details_if_due',
             func=send_internship_details_if_due,
-            trigger='interval',
-            seconds=60
+            trigger='cron',
+            hour=18,  # 6:30 PM UTC = Midnight IST
+            minute=30
         )
         scheduler.add_job(
             id='send_internship_loi_if_due',
             func=send_internship_loi_if_due,
-            trigger='interval',
-            seconds=60
+            trigger='cron',
+            hour=18,
+            minute=30
         )
-            # trigger='cron',
-            # hour=10
-        # Additional tasks
         scheduler.add_job(
             id='weekly_emails',
             func=send_weekly_emails,
-            trigger='interval',
-            seconds=70
+            trigger='cron',
+            hour=18,
+            minute=30
         )
-        #             trigger='cron',
-        #     day_of_week='mon',
-        #     hour=9
         scheduler.add_job(
             id='cleanup',
             func=cleanup_old_entries,
-            trigger='interval',
-            seconds=80
+            trigger='cron',
+            day=1,
+            hour=18,
+            minute=30
         )
-        # trigger='cron',
-        #     day=1,
-        #     hour=0
         scheduler.add_job(
             id='completion_emails',
             func=send_completion_emails,
-            trigger='interval',
-            seconds=80
+            trigger='cron',
+            hour=18,
+            minute=30
         )
-        # trigger='cron',
-        #     hour=10,
-        #     minute=0
+
         scheduler.start()
         atexit.register(lambda: scheduler.shutdown())
 
-    # Run the Flask dev server
-    app.run(debug=True, use_reloader=False)
+    # For production deployment, use a WSGI server like Gunicorn rather than app.run()
+    app.run(debug=False, use_reloader=False)

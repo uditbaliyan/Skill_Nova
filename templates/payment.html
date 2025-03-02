@@ -97,55 +97,94 @@
 
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
-        document.getElementById('rzp-button1').onclick = function (e) {
-    e.preventDefault();
-
-    // Validate form fields
-    var email = document.getElementById('email').value.trim();
-    var name = document.getElementById('name').value.trim();
-    var domain = document.getElementById('domain').value.trim();
-    var qualification = document.getElementById('qualification').value.trim();
-    var degree = document.getElementById('degree').value.trim();
-    var year = document.getElementById('year').value.trim();
-    var college = document.getElementById('college').value.trim();
-    var contact = document.getElementById('contact').value.trim();
-    var whatsapp = document.getElementById('whatsapp').value.trim();
-    var source = document.getElementById('source').value.trim();
-
-    if (!email || !name || !domain || !qualification || !degree || !year || !college || !contact || !whatsapp || !source) {
-        alert("Please fill in all required fields before proceeding with the payment.");
-        return; // Stop execution if any field is empty
-    }
-
-    // Payment options
-    var options = {
-        "key": "rzp_live_fXZJoXxFMVfyzL"
-        "amount": "100",  // 49 INR = 4900 paise
-        "currency": "INR",
-        "description": "SkillNova Payment",
-        "image": "example.com/image/rzp.jpg",
-        "prefill": {
-            "email": email,
-            "contact": contact
-        },
-        "handler": function (response) {
-            alert("Payment Successful: " + response.razorpay_payment_id);
-        },
-        "modal": {
-            "ondismiss": function () {
-                if (confirm("Are you sure you want to close the form?")) {
-                    console.log("Checkout form closed by the user");
-                } else {
-                    console.log("Complete the Payment");
-                }
-            }
+    document.getElementById('rzp-button1').onclick = function (e) {
+        e.preventDefault();
+    
+        // Validate form fields
+        var formData = {
+            "email": document.getElementById('email').value.trim(),
+            "name": document.getElementById('name').value.trim(),
+            "domain": document.getElementById('domain').value.trim(),
+            "qualification": document.getElementById('qualification').value.trim(),
+            "degree": document.getElementById('degree').value.trim(),
+            "year": document.getElementById('year').value.trim(),
+            "college": document.getElementById('college').value.trim(),
+            "contact": document.getElementById('contact').value.trim(),
+            "whatsapp": document.getElementById('whatsapp').value.trim(),
+            "telegram_contact": document.getElementById('telegram_contact').value.trim(),
+            "source": document.getElementById('source').value.trim()
+        };
+    
+        if (Object.values(formData).some(value => value === "")) {
+            alert("Please fill in all required fields before proceeding with the payment.");
+            return;
         }
+    
+        // First, create a Razorpay order
+        fetch("/create-order", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ amount: 10 })
+        })
+        .then(response => response.json())
+        .then(orderData => {
+            if (orderData.status !== "success") {
+                alert("Error creating order. Please try again.");
+                return;
+            }
+    
+            var options = {
+                "key": "rzp_test_fXZJoXhbdjhsa",
+                "amount": orderData.amount,
+                "currency": "INR",
+                "order_id": orderData.order_id,  // Razorpay order ID
+                "description": "SkillNova Payment",
+                "image": "/static/image/skillnova.png",
+                "prefill": {
+                    "email": formData.email,
+                    "contact": formData.contact
+                },
+                "handler": function (response) {
+                    // Send data to backend
+                    formData["razorpay_payment_id"] = response.razorpay_payment_id;
+                    formData["razorpay_order_id"] = orderData.order_id;
+                    formData["razorpay_signature"] = response.razorpay_signature;
+    
+                    fetch("/submit", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify(formData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            alert("✅ Payment Successful & Registration Saved!");
+                            window.location.href = data.redirect_url;
+                        } else {
+                            alert("⚠️ Error: " + data.message);
+                        }
+                    });
+                },
+                "modal": {
+                    "ondismiss": function () {
+                        if (confirm("Payment was not completed. Would you like to try again?")) {
+                            rzp1.open();
+                        } else {
+                            alert("❌ Payment Canceled. Please try again.");
+                        }
+                    }
+                }
+            };
+    
+            var rzp1 = new Razorpay(options);
+            rzp1.open();
+        });
     };
+</script>    
 
-    // Open Razorpay payment window
-    var rzp1 = new Razorpay(options);
-    rzp1.open();
-};
-</script>
+</body>
+</html>
 
 

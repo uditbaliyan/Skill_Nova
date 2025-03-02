@@ -138,7 +138,7 @@ def create_app():
                 "telegram_contact": data.get("telegram_contact"),
                 "payment_id": payment_id,
                 "payment_status": "paid",
-                "internship_start_date": datetime.utcnow(),
+                "internship_start_date": datetime.now(),
                 "internship_duration": 1  # Example: 1 month
             }
 
