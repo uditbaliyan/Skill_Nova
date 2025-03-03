@@ -44,35 +44,27 @@
         <header id="header" class="fixed w-full z-50 bg-white shadow-md">
             <nav class="container mx-auto px-4 py-4">
                 <div class="flex justify-between items-center">
-                    <a href="#" class="text-2xl font-bold text-primary-600">
-                        SkillNova
-                    </a>
-
+                    <a href="#" class="text-2xl font-bold text-primary-600">SkillNova</a>
+    
                     <!-- Mobile menu button -->
                     <button id="menu-btn" class="lg:hidden focus:outline-none">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16"></path>
+                                  d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
                     </button>
-
+    
                     <!-- Desktop Navigation -->
                     <div class="hidden lg:flex space-x-8">
                         <a href="#" class="text-neutral-600 hover:text-primary-600 transition duration-300">Home</a>
-                        <a href="#internships"
-                            class="text-neutral-600 hover:text-primary-600 transition duration-300">Internships</a>
-                        <a href="#how-it-works"
-                            class="text-neutral-600 hover:text-primary-600 transition duration-300">How It
-                            Works</a>
-                        <a href="#testimonials"
-                            class="text-neutral-600 hover:text-primary-600 transition duration-300">Testimonials</a>
-                        <a href="#services"
-                            class="text-neutral-600 hover:text-primary-600 transition duration-300">Services</a>
+                        <a href="#internships" class="text-neutral-600 hover:text-primary-600 transition duration-300">Internships</a>
+                        <a href="#how-it-works" class="text-neutral-600 hover:text-primary-600 transition duration-300">How It Works</a>
+                        <a href="#testimonials" class="text-neutral-600 hover:text-primary-600 transition duration-300">Testimonials</a>
+                        <a href="#services" class="text-neutral-600 hover:text-primary-600 transition duration-300">Services</a>
                         <a href="#faq" class="text-neutral-600 hover:text-primary-600 transition duration-300">FAQ</a>
-                        <a href="#contact"
-                            class="text-neutral-600 hover:text-primary-600 transition duration-300">Contact</a>
+                        <a href="#contact" class="text-neutral-600 hover:text-primary-600 transition duration-300">Contact</a>
                     </div>
-
+    
                     <!-- Mobile Navigation -->
                     <div id="mobile-menu" class="hidden fixed inset-0 bg-white z-50 lg:hidden">
                         <div class="flex flex-col h-full">
@@ -81,70 +73,73 @@
                                 <button id="close-menu" class="focus:outline-none">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12">
-                                        </path>
+                                              d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
                                 </button>
                             </div>
-
+    
                             <div class="flex flex-col space-y-4 p-4">
-                                <a href="/"
-                                    class="text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Home</a>
-                                <a href="/internships"
-                                    class="text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Internships</a>
-                                <a href="/how-it-works"
-                                    class="text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">How
-                                    It Works</a>
-                                <a href="/testimonials"
-                                    class="text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Testimonials</a>
-                                <a href="/services"
-                                    class="text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Services</a>
-                                <a href="/products"
-                                    class="text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Products</a>
-                                <a href="/about"
-                                    class="text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">About
-                                    Us</a>
-                                <a href="/faq"
-                                    class="text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">FAQ</a>
-                                <a href="/jobs"
-                                    class="text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Jobs</a>
-                                <a href="/contact"
-                                    class="text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Contact</a>
+                                <a href="#" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Home</a>
+                                <a href="#internships" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Internships</a>
+                                <a href="#how-it-works" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">How It Works</a>
+                                <a href="#testimonials" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Testimonials</a>
+                                <a href="#services" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Services</a>
+                                <a href="#products" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Products</a>
+                                <a href="#about" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">About Us</a>
+                                <a href="#faq" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">FAQ</a>
+                                <a href="#jobs" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Jobs</a>
+                                <a href="#contact" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Contact</a>
                             </div>
                         </div>
                     </div>
+    
                 </div>
             </nav>
         </header>
-
-        <!-- Mobile Menu Script -->
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const menuBtn = document.getElementById('menu-btn');
-                const closeBtn = document.getElementById('close-menu');
-                const mobileMenu = document.getElementById('mobile-menu');
-
-                if (menuBtn && closeBtn && mobileMenu) {
-                    menuBtn.addEventListener('click', () => {
-                        mobileMenu.classList.remove('hidden');
-                        document.body.style.overflow = 'hidden';
-                    });
-
-                    closeBtn.addEventListener('click', () => {
+    </div>
+    
+    <!-- Mobile Menu Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuBtn = document.getElementById('menu-btn');
+            const closeBtn = document.getElementById('close-menu');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const menuLinks = mobileMenu.querySelectorAll('.menu-link'); // select links within mobile menu
+    
+            if (menuBtn && closeBtn && mobileMenu) {
+                // Open mobile menu when clicking the menu button
+                menuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    mobileMenu.classList.remove('hidden');
+                });
+    
+                // Close mobile menu when clicking the close button
+                closeBtn.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+    
+                // Prevent clicks within the mobile menu from bubbling up
+                mobileMenu.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+    
+                // Close mobile menu when clicking anywhere outside the mobile menu area
+                document.addEventListener('click', (e) => {
+                    if (!mobileMenu.contains(e.target) && !menuBtn.contains(e.target)) {
                         mobileMenu.classList.add('hidden');
-                        document.body.style.overflow = 'auto';
+                    }
+                });
+    
+                // Close mobile menu when clicking any mobile menu link
+                menuLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        mobileMenu.classList.add('hidden');
                     });
-
-                    // Close menu when clicking outside
-                    document.addEventListener('click', (e) => {
-                        if (!mobileMenu.contains(e.target) && !menuBtn.contains(e.target)) {
-                            mobileMenu.classList.add('hidden');
-                            document.body.style.overflow = 'auto';
-                        }
-                    });
-                }
-            });
-        </script>
+                });
+            }
+        });
+    </script>
+    
 
         <div class="relative isolate px-6  lg:px-8 ">
             <div class="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"
