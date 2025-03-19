@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, session
 from flask_sqlalchemy import SQLAlchemy
 from apscheduler.schedulers.background import BackgroundScheduler
-import razorpay
+# import razorpay
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -91,14 +91,14 @@ class Student(db.Model):
 # Flask Application Factory
 # ------------------------------------------------------------------------------
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__,static_folder="public_html",template_folder="public_html")
     app.config.from_object(Config)
     
     # Initialize SQLAlchemy with the app
     db.init_app(app)
 
     # Initialize Razorpay client
-    client = razorpay.Client(auth=(app.config["RAZORPAY_KEY"], app.config["RAZORPAY_SECRET"]))
+    # client = razorpay.Client(auth=(app.config["RAZORPAY_KEY"], app.config["RAZORPAY_SECRET"]))
 
     # --------------------------------------------------------------------------
     # Routes
