@@ -28,38 +28,22 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------
 # Initialize SQLAlchemy globally
 # ------------------------------------------------------------------------------
-db = SQLAlchemy()
-
+app = Flask(__name__, static_folder="public_html", template_folder="public_html")
+app.config.update(
+    SECRET_KEY=os.getenv("SECRET_KEY", "fallback-secret"),
+    SQLALCHEMY_DATABASE_URI=os.getenv(
+        "DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'instance/students.db')}"
+    ),
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    PERMANENT_SESSION_LIFETIME=timedelta(minutes=15),
+    SCHEDULER_API_ENABLED=False,
+    SCHEDULER_ENABLED=True,
+)
+appliction=app
+db = SQLAlchemy(app)
 # ------------------------------------------------------------------------------
 # Production-ready configuration class
 # ------------------------------------------------------------------------------
-class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret")
-    
-    # APScheduler config
-    SCHEDULER_API_ENABLED = False
-    SCHEDULER_JOB_DEFAULTS = {'coalesce': True, 'max_instances': 1}
-    SCHEDULER_ENABLED = True
-    
-    # Database configuration:
-    # Use DATABASE_URL from the environment (e.g., PostgreSQL) for production,
-    # fallback to SQLite for local development (not recommended for heavy traffic)
-    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        f"sqlite:///{os.path.join(BASE_DIR, 'instance/students.db')}"
-    )
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # Engine options for connection pooling in production
-    
-    # Session lifetime
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=15)
-    
-    # Razorpay credentials
-    RAZORPAY_KEY = os.getenv("RAZORPAY_KEY")
-    RAZORPAY_SECRET = os.getenv("RAZORPAY_SECRET")
-    
-    # (Optional) You could also centralize SMTP and other service configurations here
 
 # ------------------------------------------------------------------------------
 # Database model remains unchanged
@@ -90,126 +74,84 @@ class Student(db.Model):
 # ------------------------------------------------------------------------------
 # Flask Application Factory
 # ------------------------------------------------------------------------------
-def create_app():
-    app = Flask(__name__,static_folder="public_html",template_folder="public_html")
-    app.config.from_object(Config)
-    
-    # Initialize SQLAlchemy with the app
-    db.init_app(app)
 
-    # Initialize Razorpay client
-    # client = razorpay.Client(auth=(app.config["RAZORPAY_KEY"], app.config["RAZORPAY_SECRET"]))
+# Initialize database
+with app.app_context():
+    db.create_all()
+    logger.info("Database tables created or verified")
 
-    # --------------------------------------------------------------------------
-    # Routes
-    # --------------------------------------------------------------------------
-    @app.route('/', methods=['GET'])
-    def home():
-        logger.info("Home page accessed")
-        return render_template('index.html')
+# Flask Routes
+@app.route('/')
+def home():
+    logger.info("Home page accessed")
+    return render_template('index.html')
 
-    @app.route('/form', methods=['GET'])
-    def form():
-        logger.info("Form page accessed")
-        return render_template('form.html')
+@app.route('/form')
+def form():
+    logger.info("Form page accessed")
+    return render_template('form.html')
 
-    @app.route('/submit', methods=['POST'])
-    def submit():
-        """
-        Handles form submission and payment verification.
-        """
-        try:
-            data = request.json
-            if not data:
-                return jsonify({"status": "error", "message": "No data received"}), 400
+@app.route('/submit', methods=['POST'])
+def submit():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"status": "error", "message": "No data received"}), 400
 
-            payment_id = data.get("razorpay_payment_id")
-            order_id = data.get("razorpay_order_id")
-            signature = data.get("razorpay_signature")
-            name = data.get("name")
-            email = data.get("email")
-            internship_function = data.get("domain")
+        payment_id = data.get("razorpay_payment_id")
+        name = data.get("name")
+        email = data.get("email")
+        internship_function = data.get("domain")
 
-            form_data = {
-                "name": name,
-                "email": email,
-                "internship_function": internship_function,
-                "whatsapp": data.get("whatsapp"),
-                "telegram_contact": data.get("telegram_contact"),
-                "payment_id": payment_id,
-                "payment_status": "paid",
-                "internship_start_date": datetime.now(),
-                "internship_duration": 1  # Example: 1 month
-            }
+        form_data = {
+            "name": name,
+            "email": email,
+            "internship_function": internship_function,
+            "whatsapp": data.get("whatsapp"),
+            "telegram_contact": data.get("telegram_contact"),
+            "payment_id": payment_id,
+            "payment_status": "paid",
+            "internship_start_date": datetime.now(),
+            "internship_duration": 1
+        }
 
-            # Save to database with simple retry logic
-            for attempt in range(3):
-                try:
-                    db.session.begin()
-                    new_student = Student(**form_data)
-                    db.session.add(new_student)
-                    db.session.commit()
-                    break
-                except Exception as e:
-                    db.session.rollback()
-                    if attempt == 2:
-                        logger.error("Database commit failed after multiple attempts.")
-                        raise e
-                    time.sleep(1)
+        # Save to database with retry logic
+        for attempt in range(3):
+            try:
+                db.session.begin()
+                new_student = Student(**form_data)
+                db.session.add(new_student)
+                db.session.commit()
+                break
+            except Exception as e:
+                db.session.rollback()
+                if attempt == 2:
+                    logger.error("Database commit failed after multiple attempts.")
+                    raise e
+                time.sleep(1)
 
-            # Immediately send a confirmation email
-            send_confirmation_email(email, name, internship_function)
+        send_confirmation_email(email, name, internship_function)
+        session.pop('form_data', None)
 
-            # Clear any session data if used
-            session.pop('form_data', None)
-            session.pop('razorpay_order_id', None)
+        return jsonify({"status": "success", "redirect_url": "/thank-you"})
 
-            return jsonify({"status": "success", "redirect_url": "/thank-you"})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error processing payment/registration: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-        except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error processing payment/registration: {str(e)}")
-            return jsonify({"status": "error", "message": str(e)}), 500
+@app.route('/thank-you')
+def thank_you():
+    return render_template('success.html')
 
-    @app.route('/payment-failed', methods=['POST'])
-    def payment_failed():
-        """
-        Logs payment failures.
-        """
-        try:
-            data = request.json
-            email = data.get("email")
-            error_code = data.get("error_code")
-            error_description = data.get("error_description")
-            logger.warning(f"Payment failed for {email}. Error: {error_code} - {error_description}")
-            return jsonify({"status": "error", "message": "Payment failed, please try again."}), 400
-        except Exception as e:
-            logger.error(f"Error logging failed payment: {str(e)}")
-            return jsonify({"status": "error", "message": "Could not log failed payment."}), 500
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
 
-    @app.route('/thank-you')
-    def thank_you():
-        return render_template('success.html')
+@app.errorhandler(500)
+def internal_server_error(error):
+    return render_template('500.html'), 500
 
-    # --------------------------------------------------------------------------
-    # Error Handlers
-    # --------------------------------------------------------------------------
-    @app.errorhandler(404)
-    def page_not_found(error):
-        return render_template('404.html'), 404
-
-    @app.errorhandler(500)
-    def internal_server_error(error):
-        return render_template('500.html'), 500
-
-    # --------------------------------------------------------------------------
-    # Database Initialization
-    # --------------------------------------------------------------------------
-    with app.app_context():
-        db.create_all()
-        logger.info("Database tables created or verified")
-
-    return app
 
 # ------------------------------------------------------------------------------
 # Email sending with improved reliability (retry logic)
@@ -343,7 +285,7 @@ def send_internship_details_email(email, name, internship_function):
         """
 
     internship = pdf_path_dir.get(internship_function, "")
-    pdf_path = os.path.join(Config.BASE_DIR, 'Task_pdf', internship) if internship else None
+    pdf_path = os.path.join(BASE_DIR, 'Task_pdf', internship) if internship else None
     send_email(
         to_email=email,
         subject=subject,
@@ -409,7 +351,7 @@ def send_weekly_emails():
                     continue  
 
                 subject = "Weekly Internship Update"
-                task_details = week_tasks[student.internship_function][student.intership_week-1]
+                task_details = week_tasks[student.internship_function][student.internship_week-1]
 
                 body = f"Hi {student.name},\n\nHere are your tasks for {task_details}."
 
@@ -489,13 +431,12 @@ def send_internship_loi_if_due():
         except Exception as e:
             logger.error(f"Error in send_internship_loi_if_due: {str(e)}")
 
-# ------------------------------------------------------------------------------
-# Main Entry Point
-# ------------------------------------------------------------------------------
-if __name__ == '__main__':
-    app = create_app()
 
-    scheduler = BackgroundScheduler()
+
+def start_scheduler():
+    """
+    Purpose: 
+    """
     if app.config["SCHEDULER_ENABLED"]:
         scheduler.add_job(
             id='send_internship_details_if_due',
@@ -533,9 +474,18 @@ if __name__ == '__main__':
             hour=18,
             minute=30
         )
-
         scheduler.start()
-        atexit.register(lambda: scheduler.shutdown())
+# end def
 
-    # For production deployment, use a WSGI server like Gunicorn rather than app.run()
-    app.run(debug=False, use_reloader=False)
+
+# ------------------------------------------------------------------------------
+# Main Entry Point
+# ------------------------------------------------------------------------------
+if __name__ == '__main__':
+    scheduler = BackgroundScheduler()
+    if app.config["SCHEDULER_ENABLED"]:
+        start_scheduler()  # Function to add jobs and start scheduler
+    app.run(debug=True)
+    atexit.register(lambda: scheduler.shutdown())
+
+
