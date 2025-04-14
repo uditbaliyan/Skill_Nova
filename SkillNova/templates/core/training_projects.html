@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ training.title }} - Projects{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl shadow p-6 pt-20">
+    <h1 class="text-2xl font-bold">{{ training.title }} - Projects</h1>
+    <ul>
+        {% for project in projects %}
+        <li class="mb-4">
+            <a href="{% url 'project_detail' project.id %}" class="text-lg font-semibold">{{ project.title }}</a>
+            <p>{{ project.description|truncatewords:20 }}</p>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

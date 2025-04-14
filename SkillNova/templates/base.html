@@ -1,0 +1,57 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="robots" content="index, follow">
+
+    <title>{% block title %}SkillNova - Build Your Career with Hands-on Experience{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="icon" href="{% static '/image/skillnova.png'%}" type="image/png">
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+      content="Best online internships, web development internship for beginners, Python internship online, Android app development internship, paid internships, expert mentorship, and certification. Choose from multiple domains and kickstart your tech career today.">
+    <meta name="keywords"
+      content="internships, web development, Python, Android development, paid internships, mentorship, certification">
+    <meta name="author" content="SkillNova">
+  
+    <!-- Open Graph (Facebook, LinkedIn) -->
+    <meta property="og:title" content="SkillNova - Build Your Career with Hands-on Experience">
+    <meta property="og:description"
+      content="Best online internships with expert mentorship, hands-on projects, and certifications.">
+    <meta property="og:image" content="{% static 'images/og-image.png'%}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://skillnova.com">
+  
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SkillNova - Build Your Career with Hands-on Experience">
+    <meta name="twitter:description"
+      content="Best online internships with expert mentorship, hands-on projects, and certifications.">
+    <meta name="twitter:image" content="{% static 'images/og-image.png' %}">
+  
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block css %}{% endblock css %}
+ 
+</head>
+
+<body>
+    {% include "partials/navbar.html" %}
+    <div >
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    {% include "partials/footer.html" %}
+</body>
+<script>
+    {% block script %}
+    {% endblock script %}
+</script>
+</html>

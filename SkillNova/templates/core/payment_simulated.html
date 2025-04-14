@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Simulated Payment{% endblock title %}
+
+
+{% block content %}
+<!DOCTYPE html>
+
+<div>
+    <noscript>
+        <p>JavaScript is required for the payment simulation. Please enable JavaScript and refresh the page.</p>
+    </noscript>
+    <p>If you are not redirected automatically, please <a href="{% url 'training_detail' training.id %}">click here</a> to continue.</p>
+</div>
+
+{% endblock content %}
+
+{% block script %}
+<script>
+    window.onload = function() {
+        // Display a confirmation popup with the training price
+        var confirmPayment = confirm("Pay INR {{ training.price }} to enroll in the training?");
+        if (confirmPayment) {
+            alert("Payment successful. You are now enrolled.");
+            // Redirect to the training detail page after a successful simulation
+            window.location.href = "{% url 'training_detail' training.id %}";
+        } else {
+            // If cancelled, redirect back to the training list
+            window.location.href = "{% url 'training_list' %}";
+        }
+    };
+</script>
+
+{% endblock script %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl shadow p-6 pt-20">
+    <h1 class="text-2xl font-bold">My Enrollments</h1>
+    <ul>
+        {% for enrollment in enrollments %}
+        <li class="mb-4">
+            <a href="{% url 'training_projects' enrollment.training.id %}" class="text-lg font-semibold">{{ enrollment.training.title }}</a>
+            <p>Progress: {{ enrollment.progress }}%</p>
+            {% if enrollment.progress == 100 %}
+            <a href="{% url 'generate_certificate' enrollment.training.id %}" class="text-blue-500">Download Certificate</a>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

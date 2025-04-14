@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Trainings{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl shadow p-6 pt-20">
+    <h1 class="text-2xl font-bold mb-4">Available Trainings</h1>
+    <form method="get" class="mb-4">
+        <input type="text" name="category" placeholder="Category" class="border p-2 mr-2" value="{{ request.GET.category }}">
+        <input type="text" name="tag" placeholder="Tag" class="border p-2 mr-2" value="{{ request.GET.tag }}">
+        <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">Search</button>
+    </form>
+    <ul>
+        {% for training in trainings %}
+        <li class="mb-4">
+            <a href="{% url 'training_detail' training.id %}" class="text-lg font-semibold">{{ training.title }}</a>
+            <p>{{ training.description|truncatewords:20 }}</p>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

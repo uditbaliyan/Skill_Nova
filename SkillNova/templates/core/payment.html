@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Payment{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl shadow p-6">
+    <h1 class="text-2xl font-bold">Complete Payment</h1>
+    <p>Training: {{ training.title }}</p>
+    <p>Amount: ₹{{ training.price }}</p>
+    <form action="{% url 'payment_success' %}" method="POST">
+        {% csrf_token %}
+        <script
+            src="https://checkout.razorpay.com/v1/checkout.js"
+            data-key="{{ razorpay_key }}"
+            data-amount="{{ order.amount }}"
+            data-currency="INR"
+            data-order_id="{{ order.id }}"
+            data-buttontext="Pay with Razorpay"
+            data-name="Training System"
+            data-description="Payment for {{ training.title }}"
+            data-prefill.name="{{ request.user.username }}"
+            data-prefill.email="{{ request.user.email }}"
+        ></script>
+        <input type="hidden" name="training_id" value="{{ training.id }}">
+    </form>
+</div>
+{% endblock %}

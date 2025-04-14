@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ training.title }}{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl shadow p-6 pt-20">
+    <h1 class="text-2xl font-bold">{{ training.title }}</h1>
+    <p class="mt-4">{{ training.description }}</p>
+    {% if training.is_paid and not enrollment.is_paid %}
+        <div class="mt-6">
+            <h2 class="text-xl">Payment Required</h2>
+            <p>Price: ₹{{ training.price }}</p>
+            <form action="{% url 'create_order' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="training_id" value="{{ training.id }}">
+                <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">Pay & Enroll</button>
+            </form>
+        </div>
+    {% elif not enrollment %}
+        <div class="mt-6">
+            <form action="{% url 'enroll' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="training_id" value="{{ training.id }}">
+                <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded">Enroll Now</button>
+            </form>
+        </div>
+    {% else %}
+        <div class="mt-6">
+            <a href="{% url 'training_projects' training.id %}" class="px-4 py-2 bg-green-500 text-white rounded">Access Training</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

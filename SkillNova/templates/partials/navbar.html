@@ -1,0 +1,117 @@
+<header id="header" class="fixed w-full z-50 bg-white shadow-md">
+        <nav class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <a href="{% url 'index' %}" class="text-2xl font-bold text-primary-600">SkillNova</a>
+
+                <!-- Mobile menu button -->
+                <button id="menu-btn" class="lg:hidden focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+
+                <!-- Desktop Navigation -->
+                <div class="hidden lg:flex space-x-8">
+                    <a href="{% url 'index' %}#internships" class="text-neutral-600 hover:text-primary-600 transition duration-300">Internships</a>
+                    <a href="{% url 'index' %}#how-it-works" class="text-neutral-600 hover:text-primary-600 transition duration-300">How It Works</a>
+                    <a href="{% url 'index' %}#testimonials" class="text-neutral-600 hover:text-primary-600 transition duration-300">Testimonials</a>
+                    <a href="{% url 'index' %}#services" class="text-neutral-600 hover:text-primary-600 transition duration-300">Services</a>
+                    <a href="{% url 'index' %}#faq" class="text-neutral-600 hover:text-primary-600 transition duration-300">FAQ</a>
+            
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="mr-4">Dashboard</a>
+                    <a href="{% url 'account_logout' %}">Logout</a>
+                {% else %}
+                    <a href="{% url 'account_login' %}" class="mr-4">Login</a>
+                    <a href="{% url 'account_signup' %}">Sign Up</a>
+                {% endif %}
+
+                </div>
+
+                <!-- Mobile Navigation -->
+                <div id="mobile-menu" class="hidden fixed inset-0 bg-white z-50 lg:hidden">
+                    <div class="flex flex-col h-full">
+                        <div class="flex justify-between items-center p-4 border-b">
+                            <span class="text-2xl font-bold text-primary-600">SkillNova</span>
+                            <button id="close-menu" class="focus:outline-none">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="flex flex-col space-y-4 p-4">
+                            <a href="{% url 'dashboard' %}" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Home</a>
+                            <a href="#internships" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Internships</a>
+                            <a href="#how-it-works" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">How It Works</a>
+                            <a href="#testimonials" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Testimonials</a>
+                            <a href="#services" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Services</a>
+                            <a href="#products" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Products</a>
+                            <a href="#about" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">About Us</a>
+                            <a href="#faq" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">FAQ</a>
+                            <a href="#jobs" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Jobs</a>
+                            <a href="#contact" class="menu-link text-neutral-600 hover:text-primary-600 transition duration-300 text-lg">Contact</a>
+                            
+                                {% if user.is_authenticated %}
+                                    <a href="{% url 'dashboard' %}" class="mr-4">Dashboard</a>
+                                    <a href="{% url 'account_logout' %}">Logout</a>
+                                {% else %}
+                                    <a href="{% url 'account_login' %}" class="mr-4">Login</a>
+                                    <a href="{% url 'account_signup' %}">Sign Up</a>
+                                {% endif %}
+                            
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </nav>
+    </header>
+
+
+<!-- Mobile Menu Script -->
+
+{% block script %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const menuBtn = document.getElementById('menu-btn');
+        const closeBtn = document.getElementById('close-menu');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const menuLinks = mobileMenu.querySelectorAll('.menu-link'); // select links within mobile menu
+
+        if (menuBtn && closeBtn && mobileMenu) {
+            // Open mobile menu when clicking the menu button
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                mobileMenu.classList.remove('hidden');
+            });
+
+            // Close mobile menu when clicking the close button
+            closeBtn.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+
+            // Prevent clicks within the mobile menu from bubbling up
+            mobileMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            // Close mobile menu when clicking anywhere outside the mobile menu area
+            document.addEventListener('click', (e) => {
+                if (!mobileMenu.contains(e.target) && !menuBtn.contains(e.target)) {
+                    mobileMenu.classList.add('hidden');
+                }
+            });
+
+            // Close mobile menu when clicking any mobile menu link
+            menuLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+        }
+    });
+</script>
+{% endblock script %}

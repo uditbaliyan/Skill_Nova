@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Assignment Result{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl shadow p-6 pt-20">
+    <h1 class="text-2xl font-bold">Assignment Result</h1>
+    <p>You got {{ correct_count }} out of {{ total }} correct.</p>
+    <p>Your progress for this training is now {{ progress }}%.</p>
+    <a href="{% url 'dashboard' %}" class="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded">Back to Dashboard</a>
+</div>
+{% endblock %}
