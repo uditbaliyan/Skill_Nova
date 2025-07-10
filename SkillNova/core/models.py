@@ -48,6 +48,8 @@ class Enrollment(models.Model):
 class ProjectCompletion(models.Model):
     enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    github_link = models.URLField(blank=True, null=True)
+    linkedin_link = models.URLField(blank=True, null=True)
     completed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

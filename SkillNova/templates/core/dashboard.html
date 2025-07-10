@@ -1,18 +1,56 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
+
 {% block content %}
-<div class="bg-white rounded-xl shadow p-6 pt-20">
-    <h1 class="text-2xl font-bold">My Enrollments</h1>
-    <ul>
-        {% for enrollment in enrollments %}
-        <li class="mb-4">
-            <a href="{% url 'training_projects' enrollment.training.id %}" class="text-lg font-semibold">{{ enrollment.training.title }}</a>
-            <p>Progress: {{ enrollment.progress }}%</p>
-            {% if enrollment.progress == 100 %}
-            <a href="{% url 'generate_certificate' enrollment.training.id %}" class="text-blue-500">Download Certificate</a>
+<div class="pt-20 space-y-12">
+
+    {% for data in dashboard_data %}
+    {% for project in data.projects %}
+        <div class="border p-4 rounded-lg {% if project.completed %}bg-green-50{% else %}bg-red-50{% endif %}">
+            <h3 class="font-semibold mb-2">{{ project.title }}</h3>
+
+            {% if project.completed %}
+                <p class="text-green-700">✅ Completed</p>
+                {% if project.github %}
+                <p><a href="{{ project.github }}" class="text-blue-600 hover:underline" target="_blank">GitHub</a></p>
+                {% endif %}
+                {% if project.linkedin %}
+                <p><a href="{{ project.linkedin }}" class="text-blue-600 hover:underline" target="_blank">LinkedIn</a></p>
+                {% endif %}
+            {% else %}
+                <p class="text-red-600">❌ Not Completed</p>
             {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
+
+            <!-- Action buttons -->
+            <div class="mt-4 flex gap-2">
+                <a href="{% url 'project_detail' project.id %}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded">Project View</a>
+                <a href="{% url 'project_assignments' project.id %}" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-1 rounded">Take Assignments</a>
+            </div>
+        </div>
+    {% endfor %}
+{% endfor %}
+
+
+
+    <!-- Enrollments and Certificate -->
+    <div class="bg-white rounded-xl shadow p-6">
+        <h1 class="text-2xl font-bold mb-4">My Enrollments</h1>
+        <ul class="space-y-4">
+            {% for enrollment in enrollments %}
+            <li>
+                <a href="{% url 'training_projects' enrollment.training.id %}" class="text-lg font-semibold text-blue-800 hover:underline">
+                    {{ enrollment.training.title }}
+                </a>
+                <p>Progress: {{ enrollment.progress }}%</p>
+                {% if enrollment.progress == 100 %}
+                <a href="{% url 'generate_certificate' enrollment.training.id %}" class="text-green-600 hover:underline">🎓 Download Certificate</a>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
 </div>
 {% endblock %}
+
+

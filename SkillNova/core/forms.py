@@ -1,5 +1,5 @@
 from django import forms
-from .models import Assignment
+from .models import Assignment,ProjectCompletion
 
 class AssignmentForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -16,3 +16,8 @@ class AssignmentForm(forms.Form):
                 ],
                 widget=forms.RadioSelect
             )
+
+class ProjectCompletionForm(forms.ModelForm):
+    class Meta:
+        model = ProjectCompletion
+        fields = ['github_link', 'linkedin_link']
